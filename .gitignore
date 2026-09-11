@@ -1,0 +1,59 @@
+# --- Node / 前端 ---
+node_modules/
+dist/
+.npm-cache/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Java / 后端构建产物 ---
+backend/target/
+backend/.mvn/
+backend/mvnw
+backend/mvnw.cmd
+*.class
+*.jar
+*.war
+hs_err_pid*
+
+# --- IDE / 编辑器 ---
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# --- WorkBuddy 本地助手数据 ---
+.workbuddy/
+
+# --- 设计资源（字体/PSD 等大体积素材不入仓） ---
+design/
+*.zip
+*.psd
+*.sketch
+*.fig
+*.ai
+
+# --- 环境变量 / 密钥（永不进仓库，必要时用 .env.example 替代） ---
+.env
+.env.*
+!.env.example
+application-local.yml
+application-local.yaml
+application-local.properties
+*-local.yml
+*-local.yaml
+*-local.properties
+
+# --- 临时文件 ---
+*.tmp
+*.bak
+*.orig
+.cache/
+.tmp/

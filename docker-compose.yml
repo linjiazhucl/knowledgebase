@@ -1,0 +1,120 @@
+services:
+  enterprise-ai-kb-frontend:
+    container_name: enterprise-ai-kb-frontend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5174:80"
+    depends_on:
+      - enterprise-ai-kb-backend
+    restart: unless-stopped
+
+  enterprise-ai-kb-backend:
+    container_name: enterprise-ai-kb-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:mysql://jjzp-mysql:3306/enterprise_ai_kb?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_DATA_REDIS_HOST: jjzp-redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ""
+      MILVUS_URL: http://milvus:9092
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: kb-documents
+    ports:
+      - "18080:8080"
+    depends_on:
+      milvus:
+        condition: service_started
+    networks:
+      - default
+      - jjzp_default
+    restart: unless-stopped
+
+  etcd:
+    container_name: enterprise-ai-kb-etcd
+    image: quay.io/coreos/etcd:v3.5.5
+    command: >-
+      /usr/local/bin/etcd
+      --name=etcd
+      --data-dir=/etcd
+      --advertise-client-urls=http://etcd:2379
+      --listen-client-urls=http://0.0.0.0:2379
+      --initial-advertise-peer-urls=http://etcd:2380
+      --listen-peer-urls=http://0.0.0.0:2380
+      --initial-cluster=etcd=http://etcd:2380
+      --initial-cluster-state=new
+      --initial-cluster-token=enterprise-ai-kb-etcd
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: 1000
+      ETCD_QUOTA_BACKEND_BYTES: 4294967296
+    volumes:
+      - milvus-etcd:/etcd
+    networks:
+      - default
+    restart: unless-stopped
+
+  minio:
+    container_name: enterprise-ai-kb-minio
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    command: minio server /minio_data --console-address ":9001"
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    volumes:
+      - milvus-minio:/minio_data
+    networks:
+      - default
+    restart: unless-stopped
+
+  milvus:
+    container_name: enterprise-ai-kb-milvus
+    image: milvusdb/milvus:v2.4.15
+    command: ["milvus", "run", "standalone"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      PROXY_HTTP_PORT: 9092
+    ports:
+      - "19530:19530"
+      - "19091:9092"
+    volumes:
+      - milvus-data:/var/lib/milvus
+    depends_on:
+      - etcd
+      - minio
+    networks:
+      - default
+    restart: unless-stopped
+
+  attu:
+    container_name: enterprise-ai-kb-attu
+    image: zilliz/attu:v2.4
+    environment:
+      MILVUS_URL: milvus:19530
+    ports:
+      - "127.0.0.1:8000:3000"
+    depends_on:
+      - milvus
+    networks:
+      - default
+    restart: unless-stopped
+
+networks:
+  default:
+    name: knowledgebase_default
+  jjzp_default:
+    external: true
+
+volumes:
+  milvus-etcd:
+  milvus-minio:
+  milvus-data:

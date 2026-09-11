@@ -1,0 +1,73 @@
+CREATE TABLE IF NOT EXISTS kb_user (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(64) NOT NULL UNIQUE,
+    password_hash VARCHAR(128) NOT NULL,
+    nickname VARCHAR(64) NOT NULL,
+    role VARCHAR(32) NOT NULL DEFAULT 'admin',
+    status VARCHAR(16) NOT NULL DEFAULT 'active',
+    last_active_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS kb_model_config (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    model_type VARCHAR(16) NOT NULL,
+    config_name VARCHAR(128) NOT NULL,
+    provider VARCHAR(64) NOT NULL,
+    api_url VARCHAR(255) NOT NULL,
+    model_name VARCHAR(128) NOT NULL,
+    api_key VARCHAR(255) NULL,
+    status VARCHAR(16) NOT NULL DEFAULT 'active',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_model_type (model_type)
+);
+
+CREATE TABLE IF NOT EXISTS kb_knowledge_base (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(128) NOT NULL UNIQUE,
+    description VARCHAR(512) NULL,
+    chunk_size INT NOT NULL DEFAULT 800,
+    overlap_size INT NOT NULL DEFAULT 120,
+    document_count INT NOT NULL DEFAULT 0,
+    segment_count INT NOT NULL DEFAULT 0,
+    color VARCHAR(16) NOT NULL DEFAULT 'sage',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS kb_document (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    kb_id BIGINT NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    file_type VARCHAR(16) NOT NULL,
+    file_size BIGINT NOT NULL DEFAULT 0,
+    parse_status VARCHAR(16) NOT NULL DEFAULT 'pending',
+    status_text VARCHAR(64) NOT NULL DEFAULT '待解析',
+    parse_progress INT NOT NULL DEFAULT 0,
+    parse_content LONGTEXT NULL,
+    segment_count INT NOT NULL DEFAULT 0,
+    storage_key VARCHAR(512) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_document_kb (kb_id)
+);
+
+CREATE TABLE IF NOT EXISTS kb_segment (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    doc_id BIGINT NOT NULL,
+    kb_id BIGINT NOT NULL,
+    segment_index INT NOT NULL,
+    content TEXT NOT NULL,
+    vector_status VARCHAR(16) NOT NULL DEFAULT 'pending',
+    model_config_id BIGINT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_segment_doc (doc_id),
+    INDEX idx_segment_kb (kb_id)
+);
+
+CREATE TABLE IF NOT EXISTS kb_system_setting (
+    setting_key VARCHAR(64) PRIMARY KEY,
+    setting_value VARCHAR(128) NOT NULL,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
